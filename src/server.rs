@@ -8,11 +8,37 @@ use std::io;
 // const ERR_UNKNOWN_USER_PRIVATE_MSG: u8 = 3;
 // const ERR_UNKNOWN_MESSAGE_FORMAT: u8 = 4;
 
-fn main() {
-    let test_input = get_input();
+#[derive(Debug)]
+enum MessageType {
+    Register,
+    PublicMessage,
+    PrivateMessage,
+    Exit,
+    Invalid,
 }
 
-fn get_input() -> String {
+// WARNING: Not used
+pub fn parse_message(message: &str) -> MessageType {
+    let mut parts = message.split_whitespace();
+    match parts.next() {
+        Some(word) => {
+            if word == "REG" {
+                MessageType::Register
+            } else if word == "PUB" {
+                MessageType::PublicMessage
+            } else if word == "PRIV" {
+                MessageType::PrivateMessage
+            } else if word == "EXIT" {
+                MessageType::Exit
+            } else {
+                MessageType::Invalid
+            }
+        }
+        None => MessageType::Invalid,
+    }
+}
+
+pub fn get_input() -> String {
     let mut user_input = String::new();
     io::stdin()
         .read_line(&mut user_input)
