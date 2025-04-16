@@ -9,26 +9,58 @@ use std::io;
 // const ERR_UNKNOWN_MESSAGE_FORMAT: u8 = 4;
 
 #[derive(Debug)]
-enum MessageType {
-    Register,
-    PublicMessage,
-    PrivateMessage,
+pub enum MessageType {
+    Register(String),
+    PublicMessage(String),
+    PrivateMessage(String, String),
     Exit,
     Invalid,
 }
 
-// WARNING: Not used
 pub fn parse_message(message: &str) -> MessageType {
     let mut parts = message.split_whitespace();
     match parts.next() {
         Some(word) => {
-            if word == "REG" {
-                MessageType::Register
-            } else if word == "PUB" {
-                MessageType::PublicMessage
-            } else if word == "PRIV" {
-                MessageType::PrivateMessage
-            } else if word == "EXIT" {
+            // REG: name
+            if word == "REG:" {
+                match parts.next() {
+                    Some(username) => {
+                        if parts.next().is_none() {
+                            MessageType::Register(username.to_string())
+                        } else {
+                            MessageType::Invalid
+                        }
+                    }
+                    None => MessageType::Invalid,
+                }
+            }
+            // PUB: message
+            else if word == "PUB:" {
+                let message_content = parts.collect::<Vec<&str>>().join(" ");
+                if message_content.is_empty() {
+                    MessageType::Invalid
+                } else {
+                    MessageType::PublicMessage(message_content)
+                }
+            }
+            // PRIV: username message
+            else if word == "PRIV:" {
+                match parts.next() {
+                    Some(receiver) => {
+                        if parts.next().is_none() {
+                            MessageType::Invalid
+                        } else {
+                            let message_content = parts.collect::<Vec<&str>>().join(" ");
+                            if message_content.is_empty() {
+                                MessageType::Invalid
+                            } else {
+                                MessageType::PrivateMessage(receiver.to_string(), message_content)
+                            }
+                        }
+                    }
+                    None => MessageType::Invalid,
+                }
+            } else if word == "EXIT:" {
                 MessageType::Exit
             } else {
                 MessageType::Invalid
