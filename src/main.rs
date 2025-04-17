@@ -1,9 +1,14 @@
 mod server;
-use server::MessageType;
+
+use server::{MessageType, Server};
 
 // TODO: For now the server will just be inputs to the console
 // Have all the functionality working well (parsing the message, username check etx)
 fn main() {
+    // Start the "server"
+    let server = Server::new();
+
+    // Test input
     let input_string = server::get_input();
     let message_type = server::parse_message(&input_string);
 
@@ -30,7 +35,4 @@ fn main() {
             println!("Invalid Message");
         }
     }
-
-    println!("Please enter your name");
-    println!("Hello, world!");
 }

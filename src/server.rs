@@ -1,4 +1,4 @@
-use std::io;
+use std::{collections::HashMap, io};
 
 // const HOSTPORT: &str = "0.0.0.0:8080";
 
@@ -7,6 +7,21 @@ use std::io;
 // const ERR_USERNAME_CONTAINS_SPACES: u8 = 2;
 // const ERR_UNKNOWN_USER_PRIVATE_MSG: u8 = 3;
 // const ERR_UNKNOWN_MESSAGE_FORMAT: u8 = 4;
+
+#[derive(Debug)]
+pub struct Server {
+    clients: HashMap<String, bool>,
+}
+
+impl Server {
+    pub fn new() -> Self {
+        Server {
+            clients: HashMap::new(),
+        }
+    }
+
+    // TODO: check if username taken, if it is return err, else add
+}
 
 #[derive(Debug)]
 pub enum MessageType {
