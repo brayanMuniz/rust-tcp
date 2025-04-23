@@ -1,26 +1,42 @@
 use std::{collections::HashMap, io};
 
-// const HOSTPORT: &str = "0.0.0.0:8080";
-
-// const ERR_USERNAME_TAKEN: u8 = 0;
-// const ERR_USERNAME_TOO_LONG: u8 = 1;
-// const ERR_USERNAME_CONTAINS_SPACES: u8 = 2;
-// const ERR_UNKNOWN_USER_PRIVATE_MSG: u8 = 3;
-// const ERR_UNKNOWN_MESSAGE_FORMAT: u8 = 4;
+#[derive(Debug)]
+pub enum ServerError {
+    UsernameTaken,
+    UsernameTooLong,
+    UsernameContainsSpaces,
+    UnknownUserForPMSG,
+    UnknownMessageFormat,
+}
 
 #[derive(Debug)]
 pub struct Server {
+    hostport: String,
     clients: HashMap<String, bool>,
 }
 
 impl Server {
-    pub fn new() -> Self {
+    pub fn build(port: String) -> Self {
         Server {
-            clients: HashMap::new(),
+            hostport: port,
+            clients: HashMap::new(), // username : network number
         }
     }
 
-    // TODO: check if username taken, if it is return err, else add
+    pub fn add_user(&mut self, username: &str) -> Result<(), ServerError> {
+        let mut taken = false;
+        for (key, _) in self.clients.iter() {
+            if key == username {
+                taken = true
+            }
+        }
+
+        if !taken {
+            self.clients.insert(username.to_string(), true);
+            return Ok(());
+        }
+        Err(ServerError::UsernameTaken)
+    }
 }
 
 #[derive(Debug)]
