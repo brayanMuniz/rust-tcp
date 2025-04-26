@@ -2,11 +2,15 @@ use std::{collections::HashMap, io};
 
 #[derive(Debug)]
 pub enum ServerError {
+    UnknownUserForPMSG,
+    UnknownMessageFormat,
+}
+
+#[derive(Debug)]
+pub enum RegisterError {
     UsernameTaken,
     UsernameTooLong,
     UsernameContainsSpaces,
-    UnknownUserForPMSG,
-    UnknownMessageFormat,
 }
 
 #[derive(Debug)]
@@ -23,19 +27,23 @@ impl Server {
         }
     }
 
-    pub fn add_user(&mut self, username: &str) -> Result<(), ServerError> {
-        let mut taken = false;
+    pub fn add_user(&mut self, username: &str) -> Result<(), RegisterError> {
+        if username.len() > 16 {
+            return Err(RegisterError::UsernameTooLong);
+        }
+
+        if username.contains(" ") {
+            return Err(RegisterError::UsernameContainsSpaces);
+        }
+
         for (key, _) in self.clients.iter() {
             if key == username {
-                taken = true
+                return Err(RegisterError::UsernameTaken);
             }
         }
 
-        if !taken {
-            self.clients.insert(username.to_string(), true);
-            return Ok(());
-        }
-        Err(ServerError::UsernameTaken)
+        self.clients.insert(username.to_string(), true);
+        Ok(())
     }
 }
 
@@ -91,7 +99,7 @@ pub fn parse_message(message: &str) -> MessageType {
                     }
                     None => MessageType::Invalid,
                 }
-            } else if word == "EXIT:" {
+            } else if word == "EXIT" {
                 MessageType::Exit
             } else {
                 MessageType::Invalid

@@ -9,7 +9,11 @@ fn main() {
     // Start the "server"
     let mut server = Server::build(HOSTPORT.to_string());
 
-    println!("Enter you command!");
+    println!("Commands: ");
+    println!("REG: username");
+    println!("PUB: message");
+    println!("PRIV: username message");
+    println!("EXIT");
 
     println!("\n--- Processing Commands ---");
 
@@ -21,22 +25,37 @@ fn main() {
         match message_type {
             MessageType::Register(username) => {
                 println!("Parsed command: Register");
-                println!("Username: {}", username);
-                server.add_user(&username).unwrap();
+                let err = server.add_user(&username);
+                match err {
+                    Ok(_) => println!("Added user: {}", username),
+                    Err(err) => match err {
+                        server::RegisterError::UsernameTaken => {
+                            println!("username: {username} taken!")
+                        }
+                        server::RegisterError::UsernameTooLong => println!("username too long"),
+                        server::RegisterError::UsernameContainsSpaces => {
+                            println!("username has spaces!")
+                        }
+                    },
+                }
             }
+
             MessageType::PublicMessage(message) => {
                 println!("Parsed command: Public Message");
                 println!("Message: {}", message);
             }
+
             MessageType::PrivateMessage(receiver, message) => {
                 println!("Parsed command: Private Message");
                 println!("Receiver: {}", receiver);
                 println!("Message: {}", message);
             }
+
             MessageType::Exit => {
                 println!("Exit");
                 break;
             }
+
             MessageType::Invalid => {
                 println!("Invalid Message");
             }
