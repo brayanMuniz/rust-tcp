@@ -1,7 +1,10 @@
-use std::{collections::HashMap, io};
+use std::net::{TcpListener, TcpStream};
+use std::{collections::HashMap, io, io::Read, io::Write};
+
+const ADDR: &str = "127.0.0.1:8080";
 
 #[derive(Debug)]
-pub enum ServerError {
+pub enum MessageError {
     UnknownUserForPMSG,
     UnknownMessageFormat,
 }
@@ -15,16 +18,37 @@ pub enum RegisterError {
 
 #[derive(Debug)]
 pub struct Server {
-    hostport: String,
     clients: HashMap<String, bool>,
 }
 
 impl Server {
-    pub fn build(port: String) -> Self {
+    pub fn build() -> Self {
         Server {
-            hostport: port,
             clients: HashMap::new(), // username : network number
         }
+    }
+
+    pub fn run(&mut self) -> std::io::Result<()> {
+        let listener = TcpListener::bind(ADDR)?;
+        for stream in listener.incoming() {
+            match stream {
+                Ok(stream) => self.handle_client(stream)?, // Propogate error since its same type
+                Err(_) => println!("Connection bad!"),
+            }
+        }
+
+        Ok(())
+    }
+
+    // TODO: look over the documentation of read and write
+    // TODO: keep the connection open
+    // TODO: handle messages from client
+    pub fn handle_client(&mut self, mut stream: TcpStream) -> std::io::Result<()> {
+        println!("Got a connection");
+        stream.write(&[1])?;
+        stream.read(&mut [0; 128])?;
+
+        Ok(())
     }
 
     pub fn add_user(&mut self, username: &str) -> Result<(), RegisterError> {
@@ -43,6 +67,15 @@ impl Server {
         }
 
         self.clients.insert(username.to_string(), true);
+        Ok(())
+    }
+
+    // NOTE: since there is not a current network connection, this will just check for username
+    pub fn pmsg(&mut self, username: &str, message: &str) -> Result<(), MessageError> {
+        if !self.clients.contains_key(username) {
+            return Err(MessageError::UnknownUserForPMSG);
+        }
+
         Ok(())
     }
 }

@@ -2,12 +2,12 @@ mod server;
 
 use server::{MessageType, Server};
 
-const HOSTPORT: &str = "0.0.0.0:8080";
-// TODO: For now the server will just be inputs to the console
-// Have all the functionality working well (parsing the message, username check etx)
 fn main() {
     // Start the "server"
-    let mut server = Server::build(HOSTPORT.to_string());
+    let mut server = Server::build();
+    server
+        .run()
+        .expect("Was not able to bind to port number :(");
 
     println!("Commands: ");
     println!("REG: username");
