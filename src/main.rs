@@ -23,7 +23,7 @@ fn main() {
         let message_type = server::parse_message(&input_string);
 
         match message_type {
-            MessageType::Register(username) => {
+            MessageType::Register { username } => {
                 println!("Parsed command: Register");
                 let err = server.add_user(&username);
                 match err {
@@ -40,12 +40,12 @@ fn main() {
                 }
             }
 
-            MessageType::PublicMessage(message) => {
+            MessageType::PublicMessage { message } => {
                 println!("Parsed command: Public Message");
                 println!("Message: {}", message);
             }
 
-            MessageType::PrivateMessage(receiver, message) => {
+            MessageType::PrivateMessage { receiver, message } => {
                 println!("Parsed command: Private Message");
                 println!("Receiver: {}", receiver);
                 println!("Message: {}", message);

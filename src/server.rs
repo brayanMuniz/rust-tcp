@@ -40,13 +40,42 @@ impl Server {
         Ok(())
     }
 
-    // TODO: look over the documentation of read and write
     // TODO: keep the connection open
     // TODO: handle messages from client
     pub fn handle_client(&mut self, mut stream: TcpStream) -> std::io::Result<()> {
         println!("Got a connection");
-        stream.write(&[1])?;
-        stream.read(&mut [0; 128])?;
+
+        loop {
+            let mut buf = vec![0; 128];
+            let amount_read = stream.read(&mut buf)?;
+            if amount_read == 0 {
+                break;
+            } else if amount_read > 0 {
+                println!("Amount read: {amount_read}");
+                let bytes_to_string = String::from_utf8(buf);
+                match bytes_to_string {
+                    Ok(client_message) => match parse_message(&client_message) {
+                        MessageType::Register { username } => {
+                            println!("Going to register with {username}")
+                        }
+                        MessageType::PublicMessage { message } => {
+                            println!("Public Message with {message}")
+                        }
+                        MessageType::PrivateMessage { receiver, message } => {
+                            println!("Private message {receiver}, with message: {message}")
+                        }
+                        MessageType::Exit => {
+                            println!("Exit");
+                        }
+                        MessageType::Invalid => {
+                            println!("Invalid message type: {client_message}");
+                        }
+                    },
+                    Err(_) => println!("Not valid!"),
+                }
+            }
+            stream.write(&[1])?;
+        }
 
         Ok(())
     }
@@ -82,23 +111,28 @@ impl Server {
 
 #[derive(Debug)]
 pub enum MessageType {
-    Register(String),
-    PublicMessage(String),
-    PrivateMessage(String, String),
+    Register { username: String },
+    PublicMessage { message: String },
+    PrivateMessage { receiver: String, message: String },
     Exit,
     Invalid,
 }
 
+// FIX: Does not parse the message correctly
 pub fn parse_message(message: &str) -> MessageType {
-    let mut parts = message.split_whitespace();
+    let mut parts = message.trim().split_whitespace();
+
     match parts.next() {
         Some(word) => {
+            println!("{word}");
             // REG: name
             if word == "REG:" {
                 match parts.next() {
                     Some(username) => {
                         if parts.next().is_none() {
-                            MessageType::Register(username.to_string())
+                            MessageType::Register {
+                                username: username.to_string(),
+                            }
                         } else {
                             MessageType::Invalid
                         }
@@ -112,7 +146,9 @@ pub fn parse_message(message: &str) -> MessageType {
                 if message_content.is_empty() {
                     MessageType::Invalid
                 } else {
-                    MessageType::PublicMessage(message_content)
+                    MessageType::PublicMessage {
+                        message: message_content,
+                    }
                 }
             }
             // PRIV: username message
@@ -126,7 +162,10 @@ pub fn parse_message(message: &str) -> MessageType {
                             if message_content.is_empty() {
                                 MessageType::Invalid
                             } else {
-                                MessageType::PrivateMessage(receiver.to_string(), message_content)
+                                MessageType::PrivateMessage {
+                                    receiver: receiver.to_string(),
+                                    message: message_content,
+                                }
                             }
                         }
                     }
