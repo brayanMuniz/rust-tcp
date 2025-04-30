@@ -16,6 +16,7 @@ pub enum RegisterError {
     UsernameContainsSpaces,
 }
 
+// TODO: update this to have the connection as the value
 #[derive(Debug)]
 pub struct Server {
     clients: HashMap<String, bool>,
@@ -40,8 +41,7 @@ impl Server {
         Ok(())
     }
 
-    // TODO: keep the connection open
-    // TODO: handle messages from client
+    // TODO: Test each case
     pub fn handle_client(&mut self, mut stream: TcpStream) -> std::io::Result<()> {
         println!("Got a connection");
 
@@ -54,8 +54,10 @@ impl Server {
                 println!("Amount read: {amount_read}");
                 let bytes_to_string = String::from_utf8(buf);
                 match bytes_to_string {
-                    Ok(client_message) => match parse_message(&client_message) {
+                    // need to 0..amount_read to not get extra bytes
+                    Ok(client_message) => match parse_message(&client_message[0..amount_read]) {
                         MessageType::Register { username } => {
+                            // Tested
                             println!("Going to register with {username}")
                         }
                         MessageType::PublicMessage { message } => {
@@ -118,26 +120,23 @@ pub enum MessageType {
     Invalid,
 }
 
-// FIX: Does not parse the message correctly
 pub fn parse_message(message: &str) -> MessageType {
     let mut parts = message.trim().split_whitespace();
 
     match parts.next() {
         Some(word) => {
-            println!("{word}");
+            println!("Command: {word}");
             // REG: name
             if word == "REG:" {
-                match parts.next() {
-                    Some(username) => {
-                        if parts.next().is_none() {
-                            MessageType::Register {
-                                username: username.to_string(),
-                            }
-                        } else {
-                            MessageType::Invalid
-                        }
-                    }
-                    None => MessageType::Invalid,
+                let username = parts.next();
+                let extra = parts.next();
+                match (username, extra) {
+                    (Some(username_str), None) => MessageType::Register {
+                        username: username_str.to_string(),
+                    },
+                    (Some(_), Some(_)) => MessageType::Invalid,
+                    (None, None) => MessageType::Invalid,
+                    (None, Some(_)) => MessageType::Invalid,
                 }
             }
             // PUB: message
