@@ -25,6 +25,7 @@ fn main() {
         match message_type {
             MessageType::Register { username } => {
                 println!("Parsed command: Register");
+                // WARNING: does not currently work because this is just input
                 let err = server.add_user(&username);
                 match err {
                     Ok(_) => println!("Added user: {}", username),

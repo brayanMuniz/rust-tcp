@@ -19,7 +19,7 @@ pub enum RegisterError {
 // TODO: update this to have the connection as the value
 #[derive(Debug)]
 pub struct Server {
-    clients: HashMap<String, bool>,
+    clients: HashMap<String, TcpStream>,
 }
 
 impl Server {
@@ -41,7 +41,7 @@ impl Server {
         Ok(())
     }
 
-    // TODO: Test each case
+    // TODO: modify to use the new connection hashmap
     pub fn handle_client(&mut self, mut stream: TcpStream) -> std::io::Result<()> {
         println!("Got a connection");
 
@@ -51,14 +51,16 @@ impl Server {
             if amount_read == 0 {
                 break;
             } else if amount_read > 0 {
-                println!("Amount read: {amount_read}");
-                let bytes_to_string = String::from_utf8(buf);
-                match bytes_to_string {
+                match String::from_utf8(buf) {
                     // need to 0..amount_read to not get extra bytes
                     Ok(client_message) => match parse_message(&client_message[0..amount_read]) {
                         MessageType::Register { username } => {
-                            // Tested
-                            println!("Going to register with {username}")
+                            println!("Going to register with {username}");
+                            let stream_clone = stream.try_clone()?;
+                            match self.add_user(&username, stream_clone) {
+                                Ok(_) => {}
+                                Err(_) => {}
+                            }
                         }
                         MessageType::PublicMessage { message } => {
                             println!("Public Message with {message}")
@@ -82,7 +84,7 @@ impl Server {
         Ok(())
     }
 
-    pub fn add_user(&mut self, username: &str) -> Result<(), RegisterError> {
+    pub fn add_user(&mut self, username: &str, stream: TcpStream) -> Result<(), RegisterError> {
         if username.len() > 16 {
             return Err(RegisterError::UsernameTooLong);
         }
@@ -97,7 +99,7 @@ impl Server {
             }
         }
 
-        self.clients.insert(username.to_string(), true);
+        self.clients.insert(username.to_string(), stream);
         Ok(())
     }
 
