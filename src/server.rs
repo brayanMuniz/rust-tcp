@@ -42,6 +42,8 @@ impl Server {
     }
 
     // TODO: modify to use the new connection hashmap
+    // WARNING: not able to handle disconnect
+    // WARNING: not able to get a new connection, not like go func
     pub fn handle_client(&mut self, mut stream: TcpStream) -> std::io::Result<()> {
         println!("Got a connection");
 
@@ -55,11 +57,24 @@ impl Server {
                     // need to 0..amount_read to not get extra bytes
                     Ok(client_message) => match parse_message(&client_message[0..amount_read]) {
                         MessageType::Register { username } => {
-                            println!("Going to register with {username}");
+                            println!("Making a new user with username: {username}");
+                            // NOTE: would I have to "manage" this clone?
                             let stream_clone = stream.try_clone()?;
                             match self.add_user(&username, stream_clone) {
-                                Ok(_) => {}
-                                Err(_) => {}
+                                Ok(_) => {
+                                    stream.write(b"Able to register with that username")?;
+                                }
+                                Err(err) => match err {
+                                    RegisterError::UsernameTaken => {
+                                        stream.write(b"Username taken")?;
+                                    }
+                                    RegisterError::UsernameTooLong => {
+                                        stream.write(b"username too long")?;
+                                    }
+                                    RegisterError::UsernameContainsSpaces => {
+                                        stream.write(b"username contains spaces")?;
+                                    }
+                                },
                             }
                         }
                         MessageType::PublicMessage { message } => {
